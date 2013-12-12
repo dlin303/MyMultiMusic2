@@ -58,6 +58,10 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 
     protected static final int CHOOSE_FILE_RESULT_CODE = 20;
     protected static final int SEND_MESSAGE_RESULT_CODE = 21; //DL
+    
+    protected static final int PORT_NUMBER_ONE = 8988;
+    protected static final int PORT_NUMBER_TWO = 8989;
+    
     private View mContentView = null;
     private WifiP2pDevice device;
     private WifiP2pInfo info;
@@ -102,7 +106,9 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 
                     @Override
                     public void onClick(View v) {
+                       
                         ((DeviceActionListener) getActivity()).disconnect();
+
                     }
                 });
 
@@ -134,25 +140,6 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 						
 						sendTextMessage("Daron is chubbers");
 						
-						/*
-						
-						Socket clientSocket = new Socket();
-						
-						
-						try {
-							
-							clientSocket.bind(null);
-							clientSocket.connect((new InetSocketAddress(info.groupOwnerAddress.getHostAddress(), 8988)), 5000);
-							Log.d("DL", "Client socket - " + clientSocket.isConnected());
-							clientSocket.close();
-							
-							
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						*/
-						
 					}
 					
 					
@@ -172,7 +159,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     	Intent serviceIntent = new Intent(getActivity(), MessageTransferService.class);
     	serviceIntent.setAction(MessageTransferService.ACTION_SEND_MESSAGE);
     	serviceIntent.putExtra(MessageTransferService.EXTRAS_GROUP_OWNER_ADDRESS, info.groupOwnerAddress.getHostAddress());
-    	serviceIntent.putExtra(MessageTransferService.EXTRAS_GROUP_OWNER_PORT, 8988);
+    	serviceIntent.putExtra(MessageTransferService.EXTRAS_GROUP_OWNER_PORT, PORT_NUMBER_ONE);
     	getActivity().startService(serviceIntent);
     }
     
@@ -218,7 +205,9 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         if (info.groupFormed && info.isGroupOwner) {
             //new FileServerAsyncTask(getActivity(), mContentView.findViewById(R.id.status_text))
             //        .execute();
-             new ToastServerAsyncTask(getActivity()).execute();
+            new ServerAsyncTask(getActivity()).execute(PORT_NUMBER_ONE);
+                                          
+             
         } else if (info.groupFormed) {
             // The other device acts as the client. In this case, we enable the
             // get file button.
@@ -229,6 +218,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             
             ((TextView) mContentView.findViewById(R.id.status_text)).setText(getResources()
                     .getString(R.string.client_text));
+        	
+
         }
 
         // hide the connect button
@@ -270,37 +261,40 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     /**
      * DL A simple server socket that accepts incoming messages and makes a toast with them
      */
-    public static class ToastServerAsyncTask extends AsyncTask<Void, Void, String> {
+    public static class ServerAsyncTask extends AsyncTask<Integer, Void, String> {
     	private Context context; //not sure what this is for, but it's the activity that gets passed it
-    	public ToastServerAsyncTask(Context c){
+    	public ServerAsyncTask(Context c){
     		context = c;
     	}
     	
-    	protected String doInBackground(Void... params){
+    	protected String doInBackground(Integer... params){
     		try{
-    			ServerSocket serverSocket = new ServerSocket(8988);
-    			Log.d("DL", "My Server Socket Opened");
-    			Socket clientSocket = serverSocket.accept();
-    			Log.d("DL", "connection established");
-    			BufferedReader inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-    			
-    			byte buf[] = new byte[1024];
-			    int len;
-			    String line;
-		        line = inputStream.readLine();
-		        
-		        if(line==null)
-		        	Log.d("DL", "message not received");
-		        else
-		        	Log.d("DL", "message received: " + line);
-		        
-		        inputStream.close();
-		        clientSocket.close();
-		        serverSocket.close();
-		        
-		        Log.d("DL", "Sockets closed");
-		        
-		        return "success";
+    			//infinite loop to keep socket open for recieving messages
+    			int portNumber = params[0];
+    			while(true){
+	    			ServerSocket serverSocket = new ServerSocket(portNumber);
+	    			Log.d("DL", "My Server Socket Opened");
+	    			Socket clientSocket = serverSocket.accept();
+	    			Log.d("DL", "connection established");
+	    			BufferedReader inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+	    			
+	    			byte buf[] = new byte[1024];
+				    int len;
+				    String line;
+			        line = inputStream.readLine();
+			        
+			        if(line==null)
+			        	Log.d("DL", "message not received");
+			        else
+			        	Log.d("DL", "message received: " + line);
+			        
+			        inputStream.close();
+			        clientSocket.close();
+			        serverSocket.close();
+			        
+			        Log.d("DL", "Sockets closed");
+    			}
+		        //return "success";
     		}
     		catch(IOException e){
     			Log.e(WiFiDirectActivity.TAG, e.getMessage());
@@ -312,13 +306,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
          * (non-Javadoc)
          * @see android.os.AsyncTask#onPostExecute(java.lang.Object)
          */
-        @Override
-        protected void onPostExecute(String result) {
-            if (result != null) {
-               // new ToastServerAsyncTask(getActivity()).execute();
-            }
+        
 
-        }
     }
     
     /**
