@@ -22,6 +22,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
@@ -46,9 +48,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.Enumeration;
 
 /**
  * A fragment that manages a particular peer and allows interaction with device
@@ -137,9 +143,11 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 						Intent intent = new Intent();
 						startActivityForResult(intent, SEND_MESSAGE_RESULT_CODE);
 						*/
-						
-						sendTextMessage("Daron is chubbers");
-						
+						if(info.isGroupOwner){
+							sendTextMessage("Message sent from group owner", PORT_NUMBER_TWO);
+						}else{
+							sendTextMessage("Message sent from client", PORT_NUMBER_ONE);
+						}
 					}
 					
 					
@@ -154,14 +162,35 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
      * directly, and not on the return/result of some other action
      */
    
-    public void sendTextMessage(String message){
+    public void sendTextMessage(String message, int portNumber){
     	Log.d("DL", "Entering sendTextMessage");
     	Intent serviceIntent = new Intent(getActivity(), MessageTransferService.class);
     	serviceIntent.setAction(MessageTransferService.ACTION_SEND_MESSAGE);
     	serviceIntent.putExtra(MessageTransferService.EXTRAS_GROUP_OWNER_ADDRESS, info.groupOwnerAddress.getHostAddress());
-    	serviceIntent.putExtra(MessageTransferService.EXTRAS_GROUP_OWNER_PORT, PORT_NUMBER_ONE);
+    	serviceIntent.putExtra(MessageTransferService.EXTRAS_GROUP_OWNER_PORT, portNumber);
+    	serviceIntent.putExtra(MessageTransferService.EXTRAS_MESSAGE, message);
     	getActivity().startService(serviceIntent);
     }
+    
+    /**
+     * DL This method gets the ip address of the local device
+     */
+    
+    public String getLocalIpAddress() {
+    	
+    	WifiManager wifiManager = (WifiManager) getActivity().getSystemService(Context.WIFI_SERVICE);
+    	WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+    	int ip = wifiInfo.getIpAddress();
+    	String ipString = String.format(
+    			"%d.%d.%d.%d",
+    			(ip & 0xff),
+    			(ip >> 8 & 0xff),
+    			(ip >> 16 & 0xff),
+    			(ip >> 24 & 0xff));
+    	return ipString;
+    }
+    
+    
     
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -205,7 +234,9 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         if (info.groupFormed && info.isGroupOwner) {
             //new FileServerAsyncTask(getActivity(), mContentView.findViewById(R.id.status_text))
             //        .execute();
-            new ServerAsyncTask(getActivity()).execute(PORT_NUMBER_ONE);
+            new ServerAsyncTask(getActivity(), PORT_NUMBER_ONE, info.groupOwnerAddress.getHostAddress()).execute();
+            mContentView.findViewById(R.id.btn_send_message).setVisibility(View.VISIBLE);
+            
                                           
              
         } else if (info.groupFormed) {
@@ -218,7 +249,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
             
             ((TextView) mContentView.findViewById(R.id.status_text)).setText(getResources()
                     .getString(R.string.client_text));
-        	
+           
+            new ServerAsyncTask(getActivity(), PORT_NUMBER_TWO, info.groupOwnerAddress.getHostAddress()).execute();
 
         }
 
@@ -261,25 +293,30 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     /**
      * DL A simple server socket that accepts incoming messages and makes a toast with them
      */
-    public static class ServerAsyncTask extends AsyncTask<Integer, Void, String> {
+    public static class ServerAsyncTask extends AsyncTask<Void, Void, String> {
     	private Context context; //not sure what this is for, but it's the activity that gets passed it
-    	public ServerAsyncTask(Context c){
+    	int portNumber; //port number to open connection on
+    	String go_address; //group owner address for reference
+    	public ServerAsyncTask(Context c, int portNumber, String go_address){
     		context = c;
+    		this.portNumber = portNumber;
+    		this.go_address=go_address;
     	}
     	
-    	protected String doInBackground(Integer... params){
+    	protected String doInBackground(Void... params){
     		try{
     			//infinite loop to keep socket open for recieving messages
-    			int portNumber = params[0];
+    			
     			while(true){
+    				Log.d("DL", "About to open socket on port " + portNumber);
 	    			ServerSocket serverSocket = new ServerSocket(portNumber);
 	    			Log.d("DL", "My Server Socket Opened");
 	    			Socket clientSocket = serverSocket.accept();
 	    			Log.d("DL", "connection established");
-	    			BufferedReader inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+	    		
 	    			
-	    			byte buf[] = new byte[1024];
-				    int len;
+	    			BufferedReader inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
 				    String line;
 			        line = inputStream.readLine();
 			        

@@ -23,6 +23,7 @@ public class MessageTransferService extends IntentService{
 	public static final String ACTION_SEND_MESSAGE = "com.example.android.wifidirect.SEND_MESSAGE";
 	public static final String EXTRAS_GROUP_OWNER_ADDRESS = "go_host";
 	public static final String EXTRAS_GROUP_OWNER_PORT = "go_port";
+	public static final String EXTRAS_MESSAGE = "message";
 	
 	public MessageTransferService (String name){
 		super(name);
@@ -40,6 +41,7 @@ public class MessageTransferService extends IntentService{
 			String host = intent.getExtras().getString(EXTRAS_GROUP_OWNER_ADDRESS);
 			Socket socket = new Socket();
 			int port = intent.getExtras().getInt(EXTRAS_GROUP_OWNER_PORT);
+			String message = intent.getExtras().getString(EXTRAS_MESSAGE);
 			try {
 				
 				Log.d("DL", "About to try to connect");
@@ -49,7 +51,7 @@ public class MessageTransferService extends IntentService{
 				
 				//try to write to output
 				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-				out.print("chubbers\r\n");
+				out.print(message + "\r\n");
 				out.flush();
 				
 				socket.close();
