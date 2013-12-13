@@ -16,11 +16,18 @@
 
 package com.example.android.wifidirect;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.MediaPlayer;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
@@ -34,9 +41,25 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.example.android.wifidirect.DeviceListFragment.DeviceActionListener;
+
+
+//class to filter by mp3 file
+class Mp3Filter implements FilenameFilter{
+	public boolean accept(File dir, String name){
+		return (name.endsWith(".mp3"));
+	}
+	
+}
+
 
 /**
  * An activity that uses WiFi Direct APIs to discover and connect with available
@@ -55,7 +78,17 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
     private final IntentFilter intentFilter = new IntentFilter();
     private Channel channel;
     private BroadcastReceiver receiver = null;
+    
+    /**
+     * Music player related attributes
+     */
+	private static final String SD_PATH = new String("/storage/sdcard0/Music/");
+	private List<String> songs = new ArrayList<String>();
+	private MediaPlayer mp = new MediaPlayer();
+	private ListView lv;
 
+	
+	
     /**
      * @param isWifiP2pEnabled the isWifiP2pEnabled to set
      */
@@ -77,7 +110,57 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 
         manager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         channel = manager.initialize(this, getMainLooper(), null);
+        
+        //Music player related actions
+        updatePlayList();
+        
+        Button stopPlay = (Button) findViewById(R.id.stopBtn);
+		stopPlay.setOnClickListener(new OnClickListener(){
+			
+			@Override
+			public void onClick(View v){
+				mp.stop();
+			}
+		});        
     }
+    
+    //used to populate song list
+	private void updatePlayList(){
+		File home = new File(SD_PATH);
+		lv = (ListView) findViewById(R.id.list);
+		
+		//if there are 1 or more mp3 files
+		if(home.listFiles(new Mp3Filter()).length>0){
+			for(File file : home.listFiles(new Mp3Filter())){
+				songs.add(file.getName());
+			}
+			
+			ArrayAdapter<String> songList = new ArrayAdapter<String>(this, R.layout.song_item, songs);
+			
+			lv.setAdapter(songList);
+			
+		}
+		
+		//set click listener to play song
+	    lv.setOnItemClickListener(new OnItemClickListener(){
+
+	        
+	        public void onItemClick(AdapterView<?> arg0, View view, int position, long id) {
+	        	try{
+	    			mp.reset();
+	    			mp.setDataSource(SD_PATH + songs.get(position));
+	    			mp.prepare();
+	    			mp.start();
+	    		}catch(IOException e){
+	    			Log.d("DL", "IOException in onListItemClick");
+	    		}
+	        }
+
+	    });
+		
+	}
+	
+
 
     /** register the BroadcastReceiver with the intent values to be matched */
     @Override

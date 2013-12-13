@@ -207,6 +207,12 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         // User has picked an image. Transfer it to group owner i.e peer using
         // FileTransferService.
         Uri uri = data.getData();
+        
+        //DL try to get filename
+        Log.d("DL", "About to get filname. path: " + uri.getPath());
+        
+  
+        
         TextView statusText = (TextView) mContentView.findViewById(R.id.status_text);
         statusText.setText("Sending: " + uri);
         Log.d(WiFiDirectActivity.TAG, "Intent----------- " + uri);
@@ -466,6 +472,12 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 
                 Log.d("DL", "server: copying files " + f.toString());
                 InputStream inputstream = client.getInputStream();
+                
+                //try to get name of file
+                /*DataInputStream clientData = new DataInputStream(inputstream);
+                String filename = clientData.readUTF();
+                Log.d("DL", "filename: " + filename);*/
+                
                 copyFile(inputstream, new FileOutputStream(f));
                 serverSocket.close();
                 
