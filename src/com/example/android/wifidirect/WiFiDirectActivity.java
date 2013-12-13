@@ -143,10 +143,14 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 		
 		//set click listener to play song
 	    lv.setOnItemClickListener(new OnItemClickListener(){
-
-	        
 	        public void onItemClick(AdapterView<?> arg0, View view, int position, long id) {
 	        	try{
+	        		//get the device detail fragment and call it's send message function
+	        		DeviceDetailFragment fragmentDetails = (DeviceDetailFragment) getFragmentManager()
+	        	                .findFragmentById(R.id.frag_detail);
+	        		
+	        		fragmentDetails.sendMusicInstruction("play");
+	        		
 	    			mp.reset();
 	    			mp.setDataSource(SD_PATH + songs.get(position));
 	    			mp.prepare();

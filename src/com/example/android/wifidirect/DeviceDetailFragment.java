@@ -169,6 +169,19 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         return mContentView;
     }
 
+    //This public interface allows people to send music player instructions
+    public void sendMusicInstruction(String inst){
+		if(info.isGroupOwner){
+			for(int i=0; i<ipList.size(); i++){
+				Log.d("DL", "Sending instruction: " + inst + " from GO to " + ipList.get(i));
+				sendTextMessage(inst, PORT_NUMBER_TWO, ipList.get(i));
+			}
+		}else{
+			TextView statusText = (TextView) mContentView.findViewById(R.id.status_text);
+			statusText.setText("Sorry, only the Group Owner can do that.");
+		}
+    }
+    
     /*
      * DL - This will perform the same actions as onActivityResult except that this is called
      * directly, and not on the return/result of some other action
