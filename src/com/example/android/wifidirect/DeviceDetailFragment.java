@@ -451,7 +451,11 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                 Log.d("DL", "Server: Socket for file reading opened");
                 Socket client = serverSocket.accept();
                 Log.d("DL", "Server: connection done for file reading");
-                final File f = new File(Environment.getExternalStorageDirectory() + "/"
+                /*final File f = new File(Environment.getExternalStorageDirectory() + "/"
+                        + "sdcard0/Music" + "/wifip2pshared-" + System.currentTimeMillis()
+                        + ".mp3");*/
+                
+                final File f = new File("/storage/"
                         + "sdcard0/Music" + "/wifip2pshared-" + System.currentTimeMillis()
                         + ".mp3");
 
