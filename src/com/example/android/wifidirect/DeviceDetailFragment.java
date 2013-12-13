@@ -66,8 +66,15 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     protected static final int CHOOSE_FILE_RESULT_CODE = 20;
     protected static final int SEND_MESSAGE_RESULT_CODE = 21; //DL
     
+    /*
+     * DL Group Owner always listens on port one, client always listens on port two
+     */
     protected static final int PORT_NUMBER_ONE = 8988;//DL
     protected static final int PORT_NUMBER_TWO = 8989;//DL
+    protected static final int PORT_NUMBER_ONE_FILE = 8990; 
+    protected static final int PORT_NUMBER_TWO_FILE = 8991;
+    
+    
     protected HandShakeAsyncTask handShaker; //DL
     protected ArrayList<String> ipList = new ArrayList<String>();
     
@@ -128,8 +135,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                         // Allow user to pick an image from Gallery or other
                         // registered apps
                         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                        intent.setType("image/*");
-                        //intent.setType("audio/mpeg3"); //send mp3 file TODO: make server accept mp3 files and not image
+                        //intent.setType("image/*");
+                        intent.setType("audio/mpeg3"); //send mp3 file TODO: make server accept mp3 files and not image
                         startActivityForResult(intent, CHOOSE_FILE_RESULT_CODE);
                     }
                 });
@@ -203,13 +210,30 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         TextView statusText = (TextView) mContentView.findViewById(R.id.status_text);
         statusText.setText("Sending: " + uri);
         Log.d(WiFiDirectActivity.TAG, "Intent----------- " + uri);
-        Intent serviceIntent = new Intent(getActivity(), FileTransferService.class);
-        serviceIntent.setAction(FileTransferService.ACTION_SEND_FILE);
-        serviceIntent.putExtra(FileTransferService.EXTRAS_FILE_PATH, uri.toString());
-        serviceIntent.putExtra(FileTransferService.EXTRAS_GROUP_OWNER_ADDRESS,
-                info.groupOwnerAddress.getHostAddress());
-        serviceIntent.putExtra(FileTransferService.EXTRAS_GROUP_OWNER_PORT, 8988);
-        getActivity().startService(serviceIntent);
+        
+        //if group owner, send to everyone in ipList
+        if(info.isGroupOwner){
+	        for(int i=0; i<ipList.size(); i++){
+	        	String host = ipList.get(i);
+		        Intent serviceIntent = new Intent(getActivity(), FileTransferService.class);
+		        serviceIntent.setAction(FileTransferService.ACTION_SEND_FILE);
+		        serviceIntent.putExtra(FileTransferService.EXTRAS_FILE_PATH, uri.toString());
+		        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_ADDRESS,
+		                host);
+		        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_PORT, PORT_NUMBER_TWO_FILE);
+		        getActivity().startService(serviceIntent);
+	        }
+        }else{
+        	//send to group owner
+	        Intent serviceIntent = new Intent(getActivity(), FileTransferService.class);
+	        serviceIntent.setAction(FileTransferService.ACTION_SEND_FILE);
+	        serviceIntent.putExtra(FileTransferService.EXTRAS_FILE_PATH, uri.toString());
+	        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_ADDRESS,
+	                info.groupOwnerAddress.getHostAddress());
+	        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_PORT, PORT_NUMBER_ONE_FILE);
+	        getActivity().startService(serviceIntent);
+        	
+        }
     }
 
     @Override
@@ -242,6 +266,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
         	handShaker.execute();
             //new ServerAsyncTask(getActivity(), PORT_NUMBER_ONE, info.groupOwnerAddress.getHostAddress()).execute();
             mContentView.findViewById(R.id.btn_send_message).setVisibility(View.VISIBLE);
+            mContentView.findViewById(R.id.btn_start_client).setVisibility(View.VISIBLE);
                                           
              
         } else if (info.groupFormed) {
@@ -256,7 +281,9 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                     .getString(R.string.client_text));
             
             clientHandShake(PORT_NUMBER_ONE);
-            new ServerAsyncTask(getActivity(), PORT_NUMBER_TWO, info.groupOwnerAddress.getHostAddress()).execute();
+            new ServerAsyncTask(getActivity(), PORT_NUMBER_TWO, info.groupOwnerAddress.getHostAddress()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
+            new FileServerAsyncTask(getActivity(), mContentView.findViewById(R.id.status_text), PORT_NUMBER_TWO_FILE)
+                    .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
         }
         
         // hide the connect button
@@ -389,7 +416,9 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     	//start the server up
     	protected void onPostExecute(String results){
     		if(results != null){
-    			new ServerAsyncTask(getActivity(), PORT_NUMBER_ONE, info.groupOwnerAddress.getHostAddress()).execute();
+    			new ServerAsyncTask(getActivity(), PORT_NUMBER_ONE, info.groupOwnerAddress.getHostAddress()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
+    			new FileServerAsyncTask(getActivity(), mContentView.findViewById(R.id.status_text), PORT_NUMBER_ONE_FILE)
+                        .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
     		}
     	}
     }
@@ -402,40 +431,44 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 
         private Context context;
         private TextView statusText;
+        int portNumber;
 
         /**
          * @param context
          * @param statusText
          */
-        public FileServerAsyncTask(Context context, View statusText) {
+        public FileServerAsyncTask(Context context, View statusText, int port) {
             this.context = context;
             this.statusText = (TextView) statusText;
+            portNumber = port;
         }
 
         @Override
         protected String doInBackground(Void... params) {
             try {
-            
-                ServerSocket serverSocket = new ServerSocket(8988);
-                Log.d(WiFiDirectActivity.TAG, "Server: Socket opened");
+                Log.d("DL", "About to open file socket for reading: " + portNumber);
+                ServerSocket serverSocket = new ServerSocket(portNumber);
+                Log.d("DL", "Server: Socket for file reading opened");
                 Socket client = serverSocket.accept();
-                Log.d(WiFiDirectActivity.TAG, "Server: connection done");
+                Log.d("DL", "Server: connection done for file reading");
                 final File f = new File(Environment.getExternalStorageDirectory() + "/"
-                        + context.getPackageName() + "/wifip2pshared-" + System.currentTimeMillis()
-                        + ".jpg");
+                        + "sdcard0/Music" + "/wifip2pshared-" + System.currentTimeMillis()
+                        + ".mp3");
 
                 File dirs = new File(f.getParent());
                 if (!dirs.exists())
                     dirs.mkdirs();
                 f.createNewFile();
 
-                Log.d(WiFiDirectActivity.TAG, "server: copying files " + f.toString());
+                Log.d("DL", "server: copying files " + f.toString());
                 InputStream inputstream = client.getInputStream();
                 copyFile(inputstream, new FileOutputStream(f));
                 serverSocket.close();
+                
+                Log.d("DL", "filepath: " + f.getAbsolutePath());
                 return f.getAbsolutePath();
             } catch (IOException e) {
-                Log.e(WiFiDirectActivity.TAG, e.getMessage());
+                Log.e("DL", e.getMessage());
                 return null;
             }
         }
@@ -450,7 +483,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                 statusText.setText("File copied - " + result);
                 Intent intent = new Intent();
                 intent.setAction(android.content.Intent.ACTION_VIEW);
-                intent.setDataAndType(Uri.parse("file://" + result), "image/*");
+                intent.setDataAndType(Uri.parse("file://" + result), "audio/mpeg3");
                 context.startActivity(intent);
             }
 
@@ -462,7 +495,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
          */
         @Override
         protected void onPreExecute() {
-            statusText.setText("Opening a server socket");
+            statusText.setText("Opening a server socket for file reading");
         }
 
     }
