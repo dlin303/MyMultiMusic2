@@ -37,6 +37,7 @@ import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -115,6 +116,7 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
         updatePlayList();
         
         Button stopPlay = (Button) findViewById(R.id.stopBtn);
+       
 		stopPlay.setOnClickListener(new OnClickListener(){
 			
 			@Override
@@ -127,15 +129,16 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
     //used to populate song list
 	private void updatePlayList(){
 		File home = new File(SD_PATH);
-		lv = (ListView) findViewById(R.id.list);
+		lv = (ListView) findViewById(R.id.mylist);
 		
 		//if there are 1 or more mp3 files
 		if(home.listFiles(new Mp3Filter()).length>0){
 			for(File file : home.listFiles(new Mp3Filter())){
+				Log.d("DL", "Found song");
 				songs.add(file.getName());
 			}
 			
-			ArrayAdapter<String> songList = new ArrayAdapter<String>(this, R.layout.song_item, songs);
+			ArrayAdapter<String> songList = new ArrayAdapter<String>(getApplicationContext(), R.layout.song_item, songs);
 			
 			lv.setAdapter(songList);
 			

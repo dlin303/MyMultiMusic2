@@ -44,9 +44,9 @@ public final class R {
         public static final int group_owner=0x7f080006;
         public static final int icon=0x7f08000a;
         public static final int linearLayout1=0x7f08000d;
-        public static final int list=0x7f080010;
         public static final int my_name=0x7f08000b;
         public static final int my_status=0x7f08000c;
+        public static final int mylist=0x7f080010;
         public static final int status_bar=0x7f080008;
         public static final int status_text=0x7f080009;
         public static final int stopBtn=0x7f080011;
