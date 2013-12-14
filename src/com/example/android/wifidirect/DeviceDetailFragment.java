@@ -16,6 +16,7 @@
 
 package com.example.android.wifidirect;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -170,11 +171,11 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     }
 
     //This public interface allows people to send music player instructions
-    public void sendMusicInstruction(String inst){
+    public void sendMusicInstruction(String instruction){
 		if(info.isGroupOwner){
 			for(int i=0; i<ipList.size(); i++){
-				Log.d("DL", "Sending instruction: " + inst + " from GO to " + ipList.get(i));
-				sendTextMessage(inst, PORT_NUMBER_TWO, ipList.get(i));
+				Log.d("DL", "Sending instruction: " + instruction + " from GO to " + ipList.get(i));
+				sendTextMessage(instruction, PORT_NUMBER_TWO, ipList.get(i));
 			}
 		}else{
 			TextView statusText = (TextView) mContentView.findViewById(R.id.status_text);
@@ -300,7 +301,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                     .getString(R.string.client_text));
             
             clientHandShake(PORT_NUMBER_ONE);
-            new ServerAsyncTask(getActivity(), PORT_NUMBER_TWO, info.groupOwnerAddress.getHostAddress()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
+            new ServerAsyncTask((WiFiDirectActivity) getActivity(), PORT_NUMBER_TWO, info.groupOwnerAddress.getHostAddress()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
             new FileServerAsyncTask(getActivity(), mContentView.findViewById(R.id.status_text), PORT_NUMBER_TWO_FILE)
                     .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
         }
@@ -348,8 +349,10 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     	private Context context; //not sure what this is for, but it's the activity that gets passed it
     	int portNumber; //port number to open connection on
     	String go_address; //group owner address for reference
-    	public ServerAsyncTask(Context c, int portNumber, String go_address){
-    		context = c;
+    	WiFiDirectActivity activity; //used to call the media player functions in parent activity
+    	
+    	public ServerAsyncTask(WiFiDirectActivity a, int portNumber, String go_address){
+    		activity = a;
     		this.portNumber = portNumber;
     		this.go_address=go_address;
     	}
@@ -374,6 +377,14 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			        	Log.d("DL", "message not received");
 			        else
 			        	Log.d("DL", "message received: " + line);
+			        
+			        if(line.contains("playSelected")){
+			        	String firstNumber = line.replaceFirst(".*?(\\d+).*", "$1");
+			        	int position = Integer.parseInt(firstNumber);
+			        	
+			        	activity.playSelected(position);
+			        }
+			        
 			        
 			        inputStream.close();
 			        clientSocket.close();
@@ -435,7 +446,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     	//start the server up
     	protected void onPostExecute(String results){
     		if(results != null){
-    			new ServerAsyncTask(getActivity(), PORT_NUMBER_ONE, info.groupOwnerAddress.getHostAddress()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
+    			new ServerAsyncTask((WiFiDirectActivity)getActivity(), PORT_NUMBER_ONE, info.groupOwnerAddress.getHostAddress()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
     			new FileServerAsyncTask(getActivity(), mContentView.findViewById(R.id.status_text), PORT_NUMBER_ONE_FILE)
                         .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
     		}

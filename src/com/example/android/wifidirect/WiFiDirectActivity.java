@@ -152,7 +152,8 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 	        		DeviceDetailFragment fragmentDetails = (DeviceDetailFragment) getFragmentManager()
 	        	                .findFragmentById(R.id.frag_detail);
 	        		
-	        		fragmentDetails.sendMusicInstruction("play");
+	        		fragmentDetails.sendMusicInstruction("playSelected " + position);
+	        		
 	        		
 	    			mp.reset();
 	    			mp.setDataSource(SD_PATH + songs.get(position));
@@ -167,7 +168,31 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 		
 	}
 	
-
+	/** Methods to control the media player **/
+	public void mediaStop(){
+		mp.stop();
+	}
+	
+	public void mediaPause(){
+		mp.pause();
+	}
+	
+	public void mediaStart(){
+		mp.start();
+	}
+	
+	public void playSelected(int position){
+		try{
+			mp.reset();
+			mp.setDataSource(SD_PATH + songs.get(position));
+			mp.prepare();
+			mp.start();
+		}catch(IOException e){
+			Log.d("DL", "IOException in onListItemClick");
+		}
+	}
+	
+	
 
     /** register the BroadcastReceiver with the intent values to be matched */
     @Override
