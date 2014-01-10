@@ -383,6 +383,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			        	int position = Integer.parseInt(firstNumber);
 			        	
 			        	activity.playSelected(position);
+			        }else if (line.contains("stop")){
+			        	activity.mediaStop();
 			        }
 			        
 			        

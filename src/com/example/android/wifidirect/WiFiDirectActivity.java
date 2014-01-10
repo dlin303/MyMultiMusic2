@@ -121,6 +121,11 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 			
 			@Override
 			public void onClick(View v){
+        		//get the device detail fragment and call it's send message function
+        		DeviceDetailFragment fragmentDetails = (DeviceDetailFragment) getFragmentManager()
+        	                .findFragmentById(R.id.frag_detail);
+        		
+        		fragmentDetails.sendMusicInstruction("stop");
 				mp.stop();
 			}
 		});        
