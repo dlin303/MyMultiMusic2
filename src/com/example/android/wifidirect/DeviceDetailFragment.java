@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -369,7 +370,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 	    			Log.d("DL", "connection established");	
 	    			
 	    			BufferedReader inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
+	    			PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+	    			
 				    String line;
 			        line = inputStream.readLine();
 			        
@@ -377,6 +379,9 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			        	Log.d("DL", "message not received");
 			        else
 			        	Log.d("DL", "message received: " + line);
+			        
+			        Log.d("DL","About to send echo response " + portNumber);
+			        out.print("echo response from " + portNumber + "\r\n");
 			        
 			        if(line.contains("playSelected")){
 			        	String firstNumber = line.replaceFirst(".*?(\\d+).*", "$1");
@@ -387,7 +392,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			        	activity.mediaStop();
 			        }
 			        
-			        
+			        out.flush();
 			        inputStream.close();
 			        clientSocket.close();
 			        serverSocket.close();
@@ -433,6 +438,10 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 				
 				ipList.add(clientIP);
 
+				PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+				out.print("handshake echo\r\n");
+				
+				out.flush();
 		        clientSocket.close();
 		        serverSocket.close();
 		        

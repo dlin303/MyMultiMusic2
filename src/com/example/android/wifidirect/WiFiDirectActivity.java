@@ -163,7 +163,27 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 	    			mp.reset();
 	    			mp.setDataSource(SD_PATH + songs.get(position));
 	    			mp.prepare();
-	    			mp.start();
+	    			//mp.start();
+	    			
+	    			//sleep for 5 ms before starting audio
+	    			new Thread(new Runnable(){
+	    				public void run() {
+	    					
+	    					try{
+	    						Thread.sleep(100);
+	    					}catch(InterruptedException e){
+	    						e.printStackTrace();
+	    					}
+	    					
+	    					runOnUiThread(new Runnable(){
+	    						public void run(){
+	    							mp.start();
+	    						}
+	    					});
+	    				}
+	    			}).start();
+	    			
+	    			
 	    		}catch(IOException e){
 	    			Log.d("DL", "IOException in onListItemClick");
 	    		}

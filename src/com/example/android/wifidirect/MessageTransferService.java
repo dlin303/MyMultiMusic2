@@ -7,9 +7,11 @@ import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
@@ -51,12 +53,19 @@ public class MessageTransferService extends IntentService{
 				
 				//try to write to output
 				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				
 				out.print(message + "\r\n");
 				out.flush();
 				
-				socket.close();
-				Log.d("DL", "Socket closed");
+				Log.d("DL", "Message sent. Waiting for response " + port);
+				String response = in.readLine();
 				
+				Log.d("DL", "echo response " + port + ": " + response);
+				
+				socket.close();
+				Log.d("DL", "Socket closed " + port);
+
 				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
