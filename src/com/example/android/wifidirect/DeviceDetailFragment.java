@@ -139,7 +139,8 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
                         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                         //intent.setType("image/*");
                         intent.setType("audio/mpeg3"); //send mp3 file TODO: make server accept mp3 files and not image
-                        startActivityForResult(intent, CHOOSE_FILE_RESULT_CODE);
+                        //startActivityForResult(intent, CHOOSE_FILE_RESULT_CODE);
+                        startActivityForResult(intent, 0);
                     }
                 });
         mContentView.findViewById(R.id.btn_send_message).setOnClickListener(
@@ -190,22 +191,28 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
      */
     public void sendTextMessage(String message, int portNumber){
     	Log.d("DL", "Entering sendTextMessage for client");
+    	WiFiDirectActivity activity = (WiFiDirectActivity) getActivity();
     	Intent serviceIntent = new Intent(getActivity(), MessageTransferService.class);
     	serviceIntent.setAction(MessageTransferService.ACTION_SEND_MESSAGE);
     	serviceIntent.putExtra(MessageTransferService.EXTRAS_GROUP_OWNER_ADDRESS, info.groupOwnerAddress.getHostAddress());
     	serviceIntent.putExtra(MessageTransferService.EXTRAS_GROUP_OWNER_PORT, portNumber);
     	serviceIntent.putExtra(MessageTransferService.EXTRAS_MESSAGE, message);
+    	serviceIntent.putExtra("receiverTag", activity.getReceiver());
     	getActivity().startService(serviceIntent);
+    	//startActivityForResult(serviceIntent, 1);
     }
     
     public void sendTextMessage(String message, int portNumber, String host){
     	Log.d("DL", "Entering sendTextMessage for host");
+    	WiFiDirectActivity activity = (WiFiDirectActivity) getActivity();
     	Intent serviceIntent = new Intent(getActivity(), MessageTransferService.class);
     	serviceIntent.setAction(MessageTransferService.ACTION_SEND_MESSAGE);
     	serviceIntent.putExtra(MessageTransferService.EXTRAS_GROUP_OWNER_ADDRESS, host);
     	serviceIntent.putExtra(MessageTransferService.EXTRAS_GROUP_OWNER_PORT, portNumber);
     	serviceIntent.putExtra(MessageTransferService.EXTRAS_MESSAGE, message);
-    	getActivity().startService(serviceIntent);
+    	serviceIntent.putExtra("receiverTag", activity.getReceiver());
+    	getActivity().startService(serviceIntent);   	
+    	//startActivityForResult(serviceIntent, 1);
     }
     /**
      * wrapper to init handshake
@@ -219,42 +226,47 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        // User has picked an image. Transfer it to group owner i.e peer using
-        // FileTransferService.
-        Uri uri = data.getData();
-        
-        //DL try to get filename
-        Log.d("DL", "About to get filname. path: " + uri.getPath());
-        
-  
-        
-        TextView statusText = (TextView) mContentView.findViewById(R.id.status_text);
-        statusText.setText("Sending: " + uri);
-        Log.d(WiFiDirectActivity.TAG, "Intent----------- " + uri);
-        
-        //if group owner, send to everyone in ipList
-        if(info.isGroupOwner){
-	        for(int i=0; i<ipList.size(); i++){
-	        	String host = ipList.get(i);
+    	if(requestCode == 0){
+	    	// User has picked an image. Transfer it to group owner i.e peer using
+	        // FileTransferService.
+	        Uri uri = data.getData();
+	        
+	        //DL try to get filename
+	        Log.d("DL", "About to get filname. path: " + uri.getPath());
+	        
+	  
+	        
+	        TextView statusText = (TextView) mContentView.findViewById(R.id.status_text);
+	        statusText.setText("Sending: " + uri);
+	        Log.d(WiFiDirectActivity.TAG, "Intent----------- " + uri);
+	        
+	        //if group owner, send to everyone in ipList
+	        if(info.isGroupOwner){
+		        for(int i=0; i<ipList.size(); i++){
+		        	String host = ipList.get(i);
+			        Intent serviceIntent = new Intent(getActivity(), FileTransferService.class);
+			        serviceIntent.setAction(FileTransferService.ACTION_SEND_FILE);
+			        serviceIntent.putExtra(FileTransferService.EXTRAS_FILE_PATH, uri.toString());
+			        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_ADDRESS,
+			                host);
+			        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_PORT, PORT_NUMBER_TWO_FILE);
+			        getActivity().startService(serviceIntent);
+		        }
+	        }else{
+	        	//send to group owner
 		        Intent serviceIntent = new Intent(getActivity(), FileTransferService.class);
 		        serviceIntent.setAction(FileTransferService.ACTION_SEND_FILE);
 		        serviceIntent.putExtra(FileTransferService.EXTRAS_FILE_PATH, uri.toString());
 		        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_ADDRESS,
-		                host);
-		        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_PORT, PORT_NUMBER_TWO_FILE);
+		                info.groupOwnerAddress.getHostAddress());
+		        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_PORT, PORT_NUMBER_ONE_FILE);
 		        getActivity().startService(serviceIntent);
+	        	
 	        }
-        }else{
-        	//send to group owner
-	        Intent serviceIntent = new Intent(getActivity(), FileTransferService.class);
-	        serviceIntent.setAction(FileTransferService.ACTION_SEND_FILE);
-	        serviceIntent.putExtra(FileTransferService.EXTRAS_FILE_PATH, uri.toString());
-	        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_ADDRESS,
-	                info.groupOwnerAddress.getHostAddress());
-	        serviceIntent.putExtra(FileTransferService.EXTRAS_DESTINATION_PORT, PORT_NUMBER_ONE_FILE);
-	        getActivity().startService(serviceIntent);
-        	
-        }
+    	}else if(requestCode==1){
+    		Log.d("DL", "MTS service ended");
+    		
+    	}
     }
 
     @Override

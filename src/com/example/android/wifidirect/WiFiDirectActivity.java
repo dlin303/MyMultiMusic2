@@ -35,6 +35,7 @@ import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.ChannelListener;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -51,6 +52,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.example.android.wifidirect.DeviceListFragment.DeviceActionListener;
+import com.example.android.wifidirect.MyResultReceiver.Receiver;
 
 
 //class to filter by mp3 file
@@ -69,7 +71,7 @@ class Mp3Filter implements FilenameFilter{
  * The application should also register a BroadcastReceiver for notification of
  * WiFi state related events.
  */
-public class WiFiDirectActivity extends Activity implements ChannelListener, DeviceActionListener {
+public class WiFiDirectActivity extends Activity implements ChannelListener, DeviceActionListener, Receiver {
 
     public static final String TAG = "wifidirectdemo";
     private WifiP2pManager manager;
@@ -87,6 +89,11 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 	private List<String> songs = new ArrayList<String>();
 	private MediaPlayer mp = new MediaPlayer();
 	private ListView lv;
+	
+	/*
+	 * My Receiver
+	 */
+	public MyResultReceiver myReceiver;
 
 	
 	
@@ -101,6 +108,10 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+        
+        //create result receiver to control music player
+        myReceiver = new MyResultReceiver(new Handler());
+        myReceiver.setReceiver(this);
 
         // add necessary intent values to be matched.
 
@@ -131,6 +142,35 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 		});        
     }
     
+    public MyResultReceiver getReceiver(){
+    	return myReceiver;
+    }
+    
+/**
+ * In order to cut down latency between two devices, we only execute the media player 
+ * commands when the MessageTransferService has finished sending.
+ */
+    public void onReceiveResult(int resultCode, Bundle resultData) {
+        // TODO Auto-generated method stub
+         		long startTime = resultData.getLong("StartTime");
+         		long endTime = System.currentTimeMillis();
+         		long delay = endTime - startTime;
+                 Log.d("DL","MTS finished! Message:"+resultData.getString("MessageTag")+ " Delay=" + delay);
+                
+                String message = resultData.getString("MessageTag");
+                
+                
+		        if(message.contains("playSelected")){
+		        	String firstNumber = message.replaceFirst(".*?(\\d+).*", "$1");
+		        	int position = Integer.parseInt(firstNumber);
+		        	playSelected(position);
+		        }else if (message.contains("stop")){
+		        	mediaStop();
+		        }
+                 
+ 
+    }
+    
     //used to populate song list
 	private void updatePlayList(){
 		File home = new File(SD_PATH);
@@ -152,14 +192,14 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 		//set click listener to play song
 	    lv.setOnItemClickListener(new OnItemClickListener(){
 	        public void onItemClick(AdapterView<?> arg0, View view, int position, long id) {
-	        	try{
+	        	//try{
 	        		//get the device detail fragment and call it's send message function
 	        		DeviceDetailFragment fragmentDetails = (DeviceDetailFragment) getFragmentManager()
 	        	                .findFragmentById(R.id.frag_detail);
 	        		
 	        		fragmentDetails.sendMusicInstruction("playSelected " + position);
 	        		
-	        		
+	        		/*
 	    			mp.reset();
 	    			mp.setDataSource(SD_PATH + songs.get(position));
 	    			mp.prepare();
@@ -182,11 +222,11 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 	    					});
 	    				}
 	    			}).start();
+	    			*/
 	    			
-	    			
-	    		}catch(IOException e){
+	    		/*}catch(IOException e){
 	    			Log.d("DL", "IOException in onListItemClick");
-	    		}
+	    		}*/
 	        }
 
 	    });

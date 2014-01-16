@@ -5,6 +5,8 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
+import android.os.ResultReceiver;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -56,16 +58,34 @@ public class MessageTransferService extends IntentService{
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				
 				out.print(message + "\r\n");
+				long startTime = System.currentTimeMillis();
 				out.flush();
 				
 				Log.d("DL", "Message sent. Waiting for response " + port);
 				String response = in.readLine();
+				long medTime = System.currentTimeMillis();
 				
 				Log.d("DL", "echo response " + port + ": " + response);
+				long waitTime = medTime - startTime;
+				Log.d("DL", "wait time = " + waitTime);
 				
 				socket.close();
+				
+				
 				Log.d("DL", "Socket closed " + port);
 
+				//notify activity that MTS has finished
+				ResultReceiver rec = intent.getParcelableExtra("receiverTag");
+				if(rec != null){
+					Log.d("DL", "rec is not null");
+				}
+				
+				
+				Bundle b = new Bundle();
+				b.putString("MessageTag", message);
+				b.putLong("StartTime", startTime);
+				rec.send(0, b);
+				
 				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
