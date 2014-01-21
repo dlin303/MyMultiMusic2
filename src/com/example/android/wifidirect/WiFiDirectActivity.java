@@ -152,23 +152,28 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
  */
     public void onReceiveResult(int resultCode, Bundle resultData) {
         // TODO Auto-generated method stub
-         		long startTime = resultData.getLong("StartTime");
-         		long endTime = System.currentTimeMillis();
-         		long delay = endTime - startTime;
-                 Log.d("DL","MTS finished! Message:"+resultData.getString("MessageTag")+ " Delay=" + delay);
-                
+         		long startTime = resultData.getLong("StartTime");   
+         		
+         		long playTime = resultData.getLong("PlayTime");
                 String message = resultData.getString("MessageTag");
-                
                 
 		        if(message.contains("playSelected")){
 		        	String firstNumber = message.replaceFirst(".*?(\\d+).*", "$1");
 		        	int position = Integer.parseInt(firstNumber);
-		        	playSelected(position);
+		        	
+		        	long endTime = System.currentTimeMillis();
+	         		long delay = endTime - startTime;
+	                Log.d("DL","MTS finished! Message:"+resultData.getString("MessageTag")+ " Delay=" + delay + " playTime: " + playTime);
+		        	
+	                //wait until system time is playtime
+	                while(System.currentTimeMillis() < playTime)
+	                	;
+	                
+	                playSelected(position);
+		        	
 		        }else if (message.contains("stop")){
 		        	mediaStop();
 		        }
-                 
- 
     }
     
     //used to populate song list
@@ -184,9 +189,7 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 			}
 			
 			ArrayAdapter<String> songList = new ArrayAdapter<String>(getApplicationContext(), R.layout.song_item, songs);
-			
 			lv.setAdapter(songList);
-			
 		}
 		
 		//set click listener to play song

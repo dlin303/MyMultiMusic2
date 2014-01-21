@@ -71,10 +71,11 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     /*
      * DL Group Owner always listens on port one, client always listens on port two
      */
-    protected static final int PORT_NUMBER_ONE = 8988;//DL
-    protected static final int PORT_NUMBER_TWO = 8989;//DL
-    protected static final int PORT_NUMBER_ONE_FILE = 8990; 
-    protected static final int PORT_NUMBER_TWO_FILE = 8991;
+    //8988
+    protected static final int PORT_NUMBER_ONE = 8000;//DL
+    protected static final int PORT_NUMBER_TWO = 8001;//DL
+    protected static final int PORT_NUMBER_ONE_FILE = 8002; 
+    protected static final int PORT_NUMBER_TWO_FILE = 8003;
     
     
     protected HandShakeAsyncTask handShaker; //DL
@@ -382,7 +383,6 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 	    			Log.d("DL", "connection established");	
 	    			
 	    			BufferedReader inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-	    			PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 	    			
 				    String line;
 			        line = inputStream.readLine();
@@ -391,9 +391,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			        	Log.d("DL", "message not received");
 			        else
 			        	Log.d("DL", "message received: " + line);
-			        
-			        Log.d("DL","About to send echo response " + portNumber);
-			        out.print("echo response from " + portNumber + "\r\n");
+
 			        
 			        if(line.contains("playSelected")){
 			        	String firstNumber = line.replaceFirst(".*?(\\d+).*", "$1");
@@ -403,8 +401,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			        }else if (line.contains("stop")){
 			        	activity.mediaStop();
 			        }
-			        
-			        out.flush();
+
 			        inputStream.close();
 			        clientSocket.close();
 			        serverSocket.close();
@@ -449,11 +446,7 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 				Log.d("DL", "ClientIP: " + clientIP);
 				
 				ipList.add(clientIP);
-
-				PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-				out.print("handshake echo\r\n");
 				
-				out.flush();
 		        clientSocket.close();
 		        serverSocket.close();
 		        
