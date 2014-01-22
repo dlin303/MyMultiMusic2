@@ -55,30 +55,37 @@ public class MessageTransferService extends IntentService{
 				
 				//try to write to output
 				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-				
-				out.print(message + "\r\n");
-				long startTime = System.currentTimeMillis();
-				out.flush();
 
-				long medTime = System.currentTimeMillis();
-
-				long waitTime = medTime - startTime;
-				Log.d("DL", "wait time = " + waitTime);
-				
-				socket.close();
-				
-				
-				Log.d("DL", "Socket closed " + port);
-
-				//notify activity that MTS has finished
-				long playTime = System.currentTimeMillis()+800;
-				ResultReceiver rec = intent.getParcelableExtra("receiverTag");				
-				Bundle b = new Bundle();
-				b.putString("MessageTag", message);
-				b.putLong("StartTime", startTime);
-				b.putLong("PlayTime", playTime);
-				rec.send(0, b);
-				
+				//test ping
+				if(message.equals("testPing")){
+					long startPing = System.currentTimeMillis();
+					for(int i=0; i<100; i++){
+						
+					}
+				} 
+				else {
+					long playTime = System.currentTimeMillis()+800;
+					
+					out.print(message + " playTime:"+ playTime + "\r\n");
+					long startTime = System.currentTimeMillis();
+					out.flush();
+						
+					socket.close();
+					long medTime = System.currentTimeMillis();
+					
+					long waitTime = medTime - startTime;
+					Log.d("DL", "wait time = " + waitTime);
+										
+					Log.d("DL", "Socket closed " + port);
+	
+					//notify activity that MTS has finished	
+					ResultReceiver rec = intent.getParcelableExtra("receiverTag");				
+					Bundle b = new Bundle();
+					b.putString("MessageTag", message);
+					b.putLong("StartTime", startTime);
+					b.putLong("PlayTime", playTime);
+					rec.send(0, b);
+				}
 				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block

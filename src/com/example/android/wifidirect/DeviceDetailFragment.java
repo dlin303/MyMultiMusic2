@@ -390,12 +390,19 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			        if(line==null)
 			        	Log.d("DL", "message not received");
 			        else
-			        	Log.d("DL", "message received: " + line);
+			        	Log.d("DL", "message received: " + line + "current millis: " + System.currentTimeMillis());
 
 			        
 			        if(line.contains("playSelected")){
 			        	String firstNumber = line.replaceFirst(".*?(\\d+).*", "$1");
 			        	int position = Integer.parseInt(firstNumber);
+			        	int playTimeIndex = line.indexOf("playTime:");
+			        	String playTimeString = line.substring(playTimeIndex+9);
+			        	long playTime = Long.parseLong(playTimeString);
+			        	Log.d("DL", "playTimeString: " + playTimeString + " playTime: " + playTime);
+			        	
+			        	while(System.currentTimeMillis() < playTime)
+			        		;
 			        	
 			        	activity.playSelected(position);
 			        }else if (line.contains("stop")){
