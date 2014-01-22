@@ -55,36 +55,50 @@ public class MessageTransferService extends IntentService{
 				
 				//try to write to output
 				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-
+				BufferedReader inputStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				
 				//test ping
-				if(message.equals("testPing")){
-					long startPing = System.currentTimeMillis();
-					for(int i=0; i<100; i++){
-						
+				if(message.equals("sync")){
+					long pingStart = System.currentTimeMillis();
+					out.print(message + "\r\n");
+					out.flush();
+					Log.d("DL", "Ping sent. Awaiting response");
+					String response = inputStream.readLine();
+					long pingEnd = System.currentTimeMillis();
+					long pingDelay = pingEnd-pingStart;
+					
+					if(response==null){
+						Log.d("DL", "No response");
+					}else{
+						Log.d("DL", "Response received: " + response);
+						long songTime = Long.parseLong(response);
+						long seekTo = songTime + pingDelay/2;
+						ResultReceiver rec = intent.getParcelableExtra("receiverTag");				
+						Bundle b = new Bundle();
+						b.putString("MessageTag", message);
+						b.putLong("SeekTo", seekTo);
+						//b.putLong("PlayTime", playTime);
+						rec.send(0, b);
 					}
 				} 
 				else {
 					long playTime = System.currentTimeMillis()+800;
 					
 					out.print(message + " playTime:"+ playTime + "\r\n");
-					long startTime = System.currentTimeMillis();
-					out.flush();
-						
-					socket.close();
-					long medTime = System.currentTimeMillis();
-					
-					long waitTime = medTime - startTime;
-					Log.d("DL", "wait time = " + waitTime);
-										
-					Log.d("DL", "Socket closed " + port);
-	
+					//long startTime = System.currentTimeMillis();
 					//notify activity that MTS has finished	
 					ResultReceiver rec = intent.getParcelableExtra("receiverTag");				
 					Bundle b = new Bundle();
 					b.putString("MessageTag", message);
-					b.putLong("StartTime", startTime);
-					b.putLong("PlayTime", playTime);
+					//b.putLong("StartTime", startTime);
+					//b.putLong("PlayTime", playTime);
 					rec.send(0, b);
+					out.flush();
+						
+					socket.close();									
+					Log.d("DL", "Socket closed " + port);
+	
+
 				}
 				
 			} catch (IOException e) {

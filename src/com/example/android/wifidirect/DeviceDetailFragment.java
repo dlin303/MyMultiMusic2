@@ -176,13 +176,19 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
     //This public interface allows people to send music player instructions
     public void sendMusicInstruction(String instruction){
 		if(info.isGroupOwner){
-			for(int i=0; i<ipList.size(); i++){
-				Log.d("DL", "Sending instruction: " + instruction + " from GO to " + ipList.get(i));
-				sendTextMessage(instruction, PORT_NUMBER_TWO, ipList.get(i));
+			if(!instruction.equals("sync")){
+				for(int i=0; i<ipList.size(); i++){
+					Log.d("DL", "Sending instruction: " + instruction + " from GO to " + ipList.get(i));
+					sendTextMessage(instruction, PORT_NUMBER_TWO, ipList.get(i));
+				}
 			}
 		}else{
-			TextView statusText = (TextView) mContentView.findViewById(R.id.status_text);
-			statusText.setText("Sorry, only the Group Owner can do that.");
+			if(instruction.equals("sync")){
+				sendTextMessage(instruction, PORT_NUMBER_ONE);
+			}else {
+				TextView statusText = (TextView) mContentView.findViewById(R.id.status_text);
+				statusText.setText("Sorry, only the Group Owner can do that.");
+			}
 		}
     }
     
@@ -383,8 +389,10 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 	    			Log.d("DL", "connection established");	
 	    			
 	    			BufferedReader inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+	    			PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 	    			
 				    String line;
+				    Log.d("DL", "Waiting for readLine on inputStream");
 			        line = inputStream.readLine();
 			        
 			        if(line==null)
@@ -396,19 +404,16 @@ public class DeviceDetailFragment extends Fragment implements ConnectionInfoList
 			        if(line.contains("playSelected")){
 			        	String firstNumber = line.replaceFirst(".*?(\\d+).*", "$1");
 			        	int position = Integer.parseInt(firstNumber);
-			        	int playTimeIndex = line.indexOf("playTime:");
-			        	String playTimeString = line.substring(playTimeIndex+9);
-			        	long playTime = Long.parseLong(playTimeString);
-			        	Log.d("DL", "playTimeString: " + playTimeString + " playTime: " + playTime);
-			        	
-			        	while(System.currentTimeMillis() < playTime)
-			        		;
 			        	
 			        	activity.playSelected(position);
 			        }else if (line.contains("stop")){
 			        	activity.mediaStop();
+			        }else if(line.contains("sync")){
+			        	Log.d("DL", "Received ping request. Sending response");
+			        	long songTime = activity.mediaCurrentTime();
+			        	out.print(songTime + "\r\n");
 			        }
-
+		        	out.flush();
 			        inputStream.close();
 			        clientSocket.close();
 			        serverSocket.close();

@@ -127,7 +127,8 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
         updatePlayList();
         
         Button stopPlay = (Button) findViewById(R.id.stopBtn);
-       
+        Button sync = (Button) findViewById(R.id.syncBtn);
+        
 		stopPlay.setOnClickListener(new OnClickListener(){
 			
 			@Override
@@ -139,7 +140,17 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
         		fragmentDetails.sendMusicInstruction("stop");
 				mp.stop();
 			}
-		});        
+		});  
+		
+		sync.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v){
+        		DeviceDetailFragment fragmentDetails = (DeviceDetailFragment) getFragmentManager()
+    	                .findFragmentById(R.id.frag_detail);
+    		
+	    		fragmentDetails.sendMusicInstruction("sync");
+			}
+		});
     }
     
     public MyResultReceiver getReceiver(){
@@ -152,15 +163,16 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
  */
     public void onReceiveResult(int resultCode, Bundle resultData) {
         // TODO Auto-generated method stub
-         		long startTime = resultData.getLong("StartTime");   
+         		//long startTime = resultData.getLong("StartTime");   
          		
-         		long playTime = resultData.getLong("PlayTime");
+         		//long playTime = resultData.getLong("PlayTime");
                 String message = resultData.getString("MessageTag");
                 
 		        if(message.contains("playSelected")){
 		        	String firstNumber = message.replaceFirst(".*?(\\d+).*", "$1");
 		        	int position = Integer.parseInt(firstNumber);
-		        	
+
+		        	/*
 		        	long endTime = System.currentTimeMillis();
 	         		long delay = endTime - startTime;
 	                Log.d("DL","MTS finished! Message:"+resultData.getString("MessageTag")+ " Delay=" + delay + " playTime: " + playTime);
@@ -168,11 +180,14 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 	                //wait until system time is playtime
 	                while(System.currentTimeMillis() < playTime)
 	                	;
-	                
+	                */
 	                playSelected(position);
 		        	
 		        }else if (message.contains("stop")){
 		        	mediaStop();
+		        }else if (message.contains("sync")){
+		        	long seekTo = resultData.getLong("SeekTo");
+		        	mediaSeek((int)seekTo);
 		        }
     }
     
@@ -249,6 +264,13 @@ public class WiFiDirectActivity extends Activity implements ChannelListener, Dev
 		mp.start();
 	}
 	
+	public void mediaSeek(int seek){
+		mp.seekTo(seek);
+	}
+	
+	public long mediaCurrentTime(){
+		return mp.getCurrentPosition();
+	}
 	public void playSelected(int position){
 		try{
 			mp.reset();

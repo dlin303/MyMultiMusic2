@@ -28,16 +28,16 @@ public final class R {
         public static final int section_header=0x7f020006;
     }
     public static final class id {
-        public static final int atn_direct_discover=0x7f080016;
-        public static final int atn_direct_enable=0x7f080015;
+        public static final int atn_direct_discover=0x7f080017;
+        public static final int atn_direct_enable=0x7f080016;
         public static final int btn_connect=0x7f080000;
         public static final int btn_disconnect=0x7f080001;
         public static final int btn_send_message=0x7f080003;
         public static final int btn_start_client=0x7f080002;
         public static final int device_address=0x7f080004;
-        public static final int device_details=0x7f080013;
+        public static final int device_details=0x7f080014;
         public static final int device_info=0x7f080005;
-        public static final int device_name=0x7f080012;
+        public static final int device_name=0x7f080013;
         public static final int frag_detail=0x7f08000f;
         public static final int frag_list=0x7f08000e;
         public static final int group_ip=0x7f080007;
@@ -50,7 +50,8 @@ public final class R {
         public static final int status_bar=0x7f080008;
         public static final int status_text=0x7f080009;
         public static final int stopBtn=0x7f080011;
-        public static final int text1=0x7f080014;
+        public static final int syncBtn=0x7f080012;
+        public static final int text1=0x7f080015;
     }
     public static final class layout {
         public static final int device_detail=0x7f030000;
